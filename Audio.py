@@ -15,7 +15,6 @@ import wave
 import json
 from matplotlib import pyplot as plt
 from pydub.playback import play
-import simpleaudio as sa
 import pygame
 import pyaudio
 import time
@@ -115,38 +114,100 @@ def run_main():
         DrawSpectrum(wav_data,framerate)
 
 
-if __name__ == '__main__':
-    #run_main()
-    Wave_read = wave.open("./WAV_File/test.wav",mode="rb")
-    nchannels = Wave_read.getnchannels()
-    sampwidth = Wave_read.getsampwidth()
-    framerate = Wave_read.getframerate()
-    nframes = Wave_read.getnframes()
+def play_audio_callback(wave_path):
 
-    str_data = Wave_read.readframes(nframes)
-    wave_data = np.fromstring(str_data, dtype=np.short)
-    wave_data = np.reshape(wave_data,[nframes,nchannels])
-    #wave_data.shape = (2, -1)
+    wf = wave.open(wave_path, 'rb')
+ 
+    # instantiate PyAudio (1)
+    p = pyaudio.PyAudio()
+ 
+    def callback(in_data, frame_count, time_info, status):
+        data = wf.readframes(frame_count)
+        return (data, pyaudio.paContinue)
+ 
+ 
+    # open stream (2)
+    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                    channels=1,
+                    rate=wf.getframerate(),
+                    output=True,
+                    stream_callback=callback)
+ 
+    # read data
+    stream.start_stream()
+ 
+    while stream.is_active():
+        time.sleep(0.1)
+ 
+    # stop stream (4)
+    stream.stop_stream()
+    stream.close()
+ 
+    # close PyAudio (5)
+    p.terminate()
+ 
+ 
+def play_audio(path, state):
+    Wave_read = wave.open(path, mode="rb")
     p = pyaudio.PyAudio()
 
-    print("nchannels ",nchannels)
-    print("samplewidth ", sampwidth)
-    print("framerate ", framerate)
-    print("nframes ", nframes)
+    stream = p.open(88200,1,format = p.get_format_from_width(2),frames_per_buffer=4096,output = True)
+    data = Wave_read.readframes(88200*5)
 
-    stream = p.open(44100,1,format = p.get_format_from_width(sampwidth),output = True)
-    #data = wave_data[0].readframes(44100)
-    
+    stream.write(data)
+
     # play stream (3)
-    #while len(data) > 0:
-     #   stream.write(data)
-      #  data = wave_data[0].readframes(44100)
-    
+    while len(data) > 0:
+        if(state[0] != state[1]):
+            stream.stop_stream()
+            stream.close()
+            if(state[1]-state[0]>0):
+                for i in range(0,(state[1]-state[0])*10):
+                    framerate = 88200+1100*i
+                    stream = p.open(framerate, 1, format = p.get_format_from_width(2),frames_per_buffer=4096,output = True)
+                    data = Wave_read.readframes(44100+550*i)
+                    stream.write(data)
+            else: 
+                for i in range(0,(state[1]-state[0])*10,-1):
+                    framerate = 88200+1100*i
+                    stream = p.open(framerate, 1, format = p.get_format_from_width(2),frames_per_buffer=4096,output = True)
+                    data = Wave_read.readframes(44100+550*i)
+                    stream.write(data)     
+            state[0] = state[1]
+        else:
+            data = Wave_read.readframes(8820)
+            stream.write(data)
+
+if __name__ == '__main__':
+    #run_main()
+    state=[0, -2]
+    play_audio("./WAV_File/test.wav", state)
+    play_audio_callback("./WAV_File/test.wav")
+    pygame.mixer.pre_init(44100, 16, 2, 4096)
+    pygame.mixer.init()
+    pygame.mixer.music.load("./WAV_File/test.wav") # 载入音乐
+    pygame.mixer.music.set_volume(0.5)# 设置音量为 0.2
+    pygame.mixer.music.play() # 播放音乐
+    time.sleep(5)
+    pygame.mixer.music.pause()
+
+    pygame.mixer.music.unpause()
+    time.sleep(5)
+    pygame.mixer.music.pause()
+
+    pygame.mixer.music.unpause()
+    time.sleep(50)
+    #str_data = Wave_read.readframes(nframes)
+    #wave_data = np.fromstring(str_data, dtype=np.short)
+    #wave_data = np.reshape(wave_data,[nframes,nchannels])
+    #wave_data.shape = (2, -1)
+
+ 
     #print(len(Wave_read) / (1000*60))
 
-    #stream.write(wave_data[:,0])
+    #stream.write(wave_data)
     #stream.stop_stream()
-
+    """
     time = np.arange(0, nframes) * (1.0 / framerate)
 
     plt.figure()
@@ -174,3 +235,4 @@ if __name__ == '__main__':
         #play_obj.wait_done()
         #sound = AudioSegment.from_file("./MP3_File/test.mp3", "mp3")
         #play(sound)
+    """
