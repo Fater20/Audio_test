@@ -18,6 +18,7 @@ from pydub.playback import play
 import pygame
 import pyaudio
 import time
+from pygame import mixer
 def MP32WAV(mp3_path,wav_path):
     """
     这是MP3文件转化成WAV文件的函数
@@ -178,25 +179,122 @@ def play_audio(path, state):
             data = Wave_read.readframes(8820)
             stream.write(data)
 
+#Function Name: play_audio_init
+#mood: 0:calm 1:happy 2:sad 3:angry
+#value: 25-100
+def play_audio_init(current_mood, value):
+    if current_mood==0 :
+        pygame.mixer.init(44100)
+        pygame.mixer.music.load("./MP3_File/test4.mp3") # 载入音乐
+        pygame.mixer.music.set_volume(value)# 设置音量
+        pygame.mixer.music.play(-1) # 播放音乐
+    elif current_mood==1 :
+        pygame.mixer.init(132300)
+        pygame.mixer.music.load("./MP3_File/test4.mp3") # 载入音乐
+        pygame.mixer.music.set_volume(value)# 设置音量
+        pygame.mixer.music.play(-1) # 播放音乐
+    elif current_mood==2 :
+        pygame.mixer.init(14700)
+        pygame.mixer.music.load("./MP3_File/test4.mp3") # 载入音乐
+        pygame.mixer.music.set_volume(value)# 设置音量
+        pygame.mixer.music.play(-1) # 播放音乐
+    elif current_mood==3 :
+        pygame.mixer.init(44100)
+        pygame.mixer.music.load("./MP3_File/test4.mp3") # 载入音乐
+        pygame.mixer.music.set_volume(value)# 设置音量
+        pygame.mixer.music.play(-1) # 播放音乐
+        drums = pygame.mixer.Sound("./MP3_File/drums.wav")
+        if(value-0.1 >= 0.1):
+            drums_volume = value-0.1
+        else:
+            drums_volume = 0.1
+        drums.set_volume(drums_volume)
+        drums.play()
+    else:
+        print("Mood ERROR")
+
+#Function Name: change_Audio
+#mood: 0:calm 1:happy 2:sad 3:angry
+#value: 25-100
+#time: 单位是秒
+#pos: 上一次调整时帧的位置
+def change_Audio(current_mood, next_mood, value, time, pos):
+    
+    #计算帧位置
+    if current_mood==1 :
+        pos = pos + 2*132300*time
+    if current_mood==2 :
+        pos = pos + 2*14700*time
+    elif current_mood==3 :
+        pos = pos + 2*44100*time
+    else:
+        pos = pos + 2*44100*time
+    
+    if(pos>=5735808):
+        pos = 0
+
+    #判断是否发生情绪转变
+    if current_mood == next_mood:
+        pygame.mixer.music.set_volume(value)
+    else:
+        if next_mood==1 :
+            pygame.mixer.quit()
+            pygame.mixer.init(132300)
+            pygame.mixer.music.load("./MP3_File/test4.mp3")  # 载入音乐
+            pygame.mixer.music.set_volume(value)            # 设置音量
+            pygame.mixer.music.play(-1)                     # 播放音乐
+            pygame.mixer.music.set_pos(pos/132300)          #设置播放位置
+        elif next_mood==2 :
+            pygame.mixer.quit()
+            pygame.mixer.init(14700)
+            pygame.mixer.music.load("./MP3_File/test4.mp3")  # 载入音乐
+            pygame.mixer.music.set_volume(value)            # 设置音量
+            pygame.mixer.music.play(-1)                     # 播放音乐
+            pygame.mixer.music.set_pos(pos/14700)           #设置播放位置
+        elif next_mood==3 :
+            pygame.mixer.quit()
+            pygame.mixer.init(44100)
+            pygame.mixer.music.load("./MP3_File/test4.mp3")  # 载入音乐
+            pygame.mixer.music.set_volume(value)            # 设置音量
+            pygame.mixer.music.play(-1)                     # 播放音乐
+            pygame.mixer.music.set_pos(pos/44100)           #设置播放位置
+            drums = pygame.mixer.Sound("./MP3_File/drums.wav")
+            if(value-0.1 >= 0.1):
+                drums_volume = value-0.1
+            else:
+                drums_volume = 0.1
+            drums.set_volume(drums_volume)
+            drums.play()   
+            
+        else:
+            pygame.mixer.quit()
+            pygame.mixer.init(44100)
+            pygame.mixer.music.load("./MP3_File/test4.mp3")  # 载入音乐
+            pygame.mixer.music.set_volume(value)            # 设置音量
+            pygame.mixer.music.play(-1)                     # 播放音乐
+            pygame.mixer.music.set_pos(pos/44100)           #设置播放位置
+    return pos
+
 if __name__ == '__main__':
     #run_main()
-    state=[0, -2]
-    play_audio("./WAV_File/test.wav", state)
-    play_audio_callback("./WAV_File/test.wav")
-    pygame.mixer.pre_init(44100, 16, 2, 4096)
-    pygame.mixer.init()
-    pygame.mixer.music.load("./WAV_File/test.wav") # 载入音乐
-    pygame.mixer.music.set_volume(0.5)# 设置音量为 0.2
-    pygame.mixer.music.play() # 播放音乐
-    time.sleep(5)
-    pygame.mixer.music.pause()
+    pos=0
+    play_audio_init(0, 50)
+    time.sleep(20)
+    while 1:
+        pos=change_Audio(0, 1, 50, 20, pos)
+        time.sleep(20)
+        pos=change_Audio(1, 2, 50, 20, pos)
+        time.sleep(20)
+        pos=change_Audio(2, 3, 50, 20, pos)
+        time.sleep(20)
+        pos=change_Audio(3, 0, 50, 20, pos)
+        time.sleep(20)
+    
+    #state=[0, -2]
+    #play_audio("./WAV_File/test.wav", state)
+    #play_audio_callback("./WAV_File/test.wav")
+    #pygame.mixer.pre_init(22100, 16, 2, 4096)
 
-    pygame.mixer.music.unpause()
-    time.sleep(5)
-    pygame.mixer.music.pause()
-
-    pygame.mixer.music.unpause()
-    time.sleep(50)
     #str_data = Wave_read.readframes(nframes)
     #wave_data = np.fromstring(str_data, dtype=np.short)
     #wave_data = np.reshape(wave_data,[nframes,nchannels])
